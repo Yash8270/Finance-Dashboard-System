@@ -42,7 +42,7 @@ built with FastAPI, SQLAlchemy, and TiDB Cloud (MySQL-compatible).
 | `analyst` | Yes       | Yes          | No                               | No           |
 | `admin`   | Yes       | Yes          | Yes                              | Yes          |
 
-All self-registered users start as **viewer**. Admins promote roles via `PATCH /users/{id}`.
+All self-registered users start as **viewer**. Admins promote roles via `PATCH /users/{user_id}`.
 
 ---
 
