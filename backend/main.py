@@ -38,7 +38,7 @@ built with FastAPI, SQLAlchemy, and TiDB Cloud (MySQL-compatible).
 
 | Role      | Dashboard | View Records | Create / Update / Delete Records | Manage Users |
 |-----------|:---------:|:------------:|:--------------------------------:|:------------:|
-| `viewer`  | Yes       | No           |                                  | No           |
+| `viewer`  | Yes       | No           | No                               | No           |
 | `analyst` | Yes       | Yes          | No                               | No           |
 | `admin`   | Yes       | Yes          | Yes                              | Yes          |
 
