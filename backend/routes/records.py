@@ -11,6 +11,15 @@ from dependencies.auth import get_current_user, require_admin, require_analyst_o
 router = APIRouter(prefix="/records", tags=["Records"])
 
 
+def _active_records(db: Session):
+    """
+    Base query that always excludes soft-deleted records.
+    All read and write routes should use this instead of db.query(Record) directly
+    to ensure deleted records are never returned or modified.
+    """
+    return db.query(Record).filter(Record.is_deleted == False)  # noqa: E712
+
+
 @router.post("", response_model=RecordOut, status_code=status.HTTP_201_CREATED)
 def create_record(
     data: RecordCreate,
@@ -42,7 +51,7 @@ def list_records(
     db: Session = Depends(get_db),
     _: User = Depends(require_analyst_or_admin),
 ):
-    query = db.query(Record)
+    query = _active_records(db)
 
     if type:
         query = query.filter(Record.type == type)
@@ -62,7 +71,7 @@ def get_record(
     db: Session = Depends(get_db),
     _: User = Depends(require_analyst_or_admin),
 ):
-    record = db.query(Record).filter(Record.id == record_id).first()
+    record = _active_records(db).filter(Record.id == record_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
@@ -100,7 +109,7 @@ def update_record(
     db: Session = Depends(get_db),
     _: User = Depends(require_admin),
 ):
-    record = db.query(Record).filter(Record.id == record_id).first()
+    record = _active_records(db).filter(Record.id == record_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
 
@@ -113,14 +122,26 @@ def update_record(
     return record
 
 
-@router.delete("/{record_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{record_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Soft-delete a record (Admin only)",
+    description="""
+Marks the record as deleted — it is **no longer returned** by any list or get endpoints.
+
+The record data is **preserved in the database** for audit purposes.
+This is intentional: financial data should never be permanently erased unilaterally.
+""",
+)
 def delete_record(
     record_id: int,
     db: Session = Depends(get_db),
     _: User = Depends(require_admin),
 ):
-    record = db.query(Record).filter(Record.id == record_id).first()
+    record = _active_records(db).filter(Record.id == record_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
-    db.delete(record)
+    
+    # Soft delete: set is_deleted flag rather than removing the row
+    record.is_deleted = True
     db.commit()

@@ -1,13 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, Enum, DateTime
 from sqlalchemy.sql import func
 from db import Base
-import enum
-
-
-class RoleEnum(str, enum.Enum):
-    admin = "admin"
-    analyst = "analyst"
-    viewer = "viewer"
+from enums import RoleEnum
 
 
 class User(Base):
