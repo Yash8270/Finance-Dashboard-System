@@ -219,4 +219,4 @@ Records are **never physically removed**. A `DELETE` request sets `is_deleted = 
 - **Viewers see dashboard summaries but not raw records.** This supports an executive/read-only use case — high-level numbers without access to individual transactions.
 - **Soft delete is intentional.** Financial records should not be permanently erased unilaterally. The `is_deleted` flag preserves audit history while keeping the API surface clean. A restore endpoint would be trivial to add.
 - **No migrations tool used.** `create_all()` handles schema creation on startup. For a production system, Alembic would be the right choice.
-- **Email is the unique login identifier.** No separate username field.
+- **Email is the unique login identifier.**
