@@ -48,9 +48,8 @@ class UserLogin(BaseModel):
 class UserUpdate(BaseModel):
     """
     Admin-only update schema. All fields are optional — send only what you want to change.
-    Allows updating name, role, and/or active status.
+    Allows updating role and/or active status.
     """
-    name: Optional[str] = Field(None, min_length=2, max_length=100)
     role: Optional[RoleEnum] = None
     is_active: Optional[bool] = None
 
@@ -59,16 +58,9 @@ class UserUpdate(BaseModel):
         provided = {f for f, v in self.__dict__.items() if v is not None}
         if not provided:
             raise ValueError(
-                "At least one field must be provided: name, role, or is_active"
+                "At least one field must be provided: role, or is_active"
             )
         return self
-
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and not v.strip():
-            raise ValueError("Name cannot be empty or just spaces")
-        return v.strip() if v else v
 
 
 # --- Response Schemas ---

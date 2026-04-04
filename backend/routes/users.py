@@ -44,14 +44,13 @@ def get_user(user_id: int, db: Session = Depends(get_db), _: User = Depends(requ
 @router.patch(
     "/{user_id}",
     response_model=UserOut,
-    summary="Update a user's name, role, or status (Admin only)",
+    summary="Update a user's role, or status (Admin only)",
     description="""
 Update one or more user attributes. All fields are optional — send only what you want to change.
 
 **Use cases:**
 - Promote a viewer → `{ "role": "analyst" }`
 - Deactivate a user → `{ "is_active": false }`
-- Rename a user → `{ "name": "New Name" }`
 """,
 )
 def update_user(
@@ -64,8 +63,6 @@ def update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if data.name is not None:
-        user.name = data.name
     if data.role is not None:
         user.role = data.role
     if data.is_active is not None:
