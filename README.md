@@ -1,6 +1,6 @@
 # 💰 Finance Dashboard System - backend
 
-A role-based REST API for managing financial records and serving dashboard analytics — built with **Python - FastAPI**, **SQLAlchemy 2.0**, and **TiDB Cloud** (MySQL-compatible).
+This System is a role-based REST API for managing financial records and serving dashboard analytics — built with **Python - FastAPI**, **SQLAlchemy 2.0**, and **TiDB Cloud** (MySQL-compatible).
 
 > **Deployment status:** Database is live on **TiDB Cloud**. Backend is deployed on **Render** — https://finance-dashboard-system-qdw7.onrender.com/
 >
@@ -8,6 +8,12 @@ A role-based REST API for managing financial records and serving dashboard analy
 
 ---
 
+## Why FastAPI and SQL (Relational Database) ?
+
+FastAPI was used because it is fast, easy to use, and provides features like automatic API documentation and dependency injection using Depends, which helps manage authentication and access control cleanly.
+
+SQL was used because it is ideal for structured data with clear relationships, such as users and financial records, ensuring data consistency and integrity.
+It also allows efficient querying, aggregation, and filtering, which are essential for generating accurate financial insights and dashboard analytics.
 ## 🚀 Tech Stack
 
 | Layer | Technology |
@@ -59,22 +65,18 @@ pip install -r requirements.txt
 **2. Create a `.env` file in the project root**
 ```env
 HOST=your-tidb-host
-DB_PORT=4000
+DB_PORT=your-db-port (generally 4000)
 DB_USER=your-db-user
 PASSWORD=your-db-password
 DATABASE=your-db-name
-SECRET_KEY=any-long-random-string
+SECRET_KEY=your-secret-key
 ```
 
 > TiDB Cloud credentials can be found in your cluster's **Connect** panel. The connection uses SSL by default — no additional SSL config is required locally.
 
 **3. Set up the database**
 
-The app auto-creates tables on startup via SQLAlchemy. If you prefer to set up the schema manually, a raw SQL file is included:
-
-```bash
-mysql -h <host> -u <user> -p <database> < database_setup.sql
-```
+A SQL file (database_setup.sql) is provided to create the required database schema. You can run this file on any local or cloud-based SQL database (e.g., MySQL, TiDB Cloud) using your preferred database tool.
 
 **4. Start the server**
 ```bash
@@ -116,6 +118,7 @@ Two tables — `users` and `records` — defined in [`database_setup.sql`](./dat
 | `date` | `DATE` | Cannot be a future date |
 | `notes` | `TEXT` | Optional |
 | `created_at` | `DATETIME` | Auto-set on insert |
+| `is_deleted` | `BOOLEAN` | Used for soft delete. When TRUE, the record is marked as deleted but not removed from the database and is excluded from all queries |
 
 **Indexes on `records`:** `type`, `date`, `category`, `user_id` — covering the most common filter and dashboard query patterns.
 
@@ -125,7 +128,7 @@ Two tables — `users` and `records` — defined in [`database_setup.sql`](./dat
 
 ## 🔐 Authentication Flow
 
-This API uses **JWT Bearer tokens**. No sessions, no cookies.
+This API uses **JWT Bearer tokens**. No sessions, no cookies. Authentication is handled through stateless JWT tokens passed in request headers
 
 1. `POST /auth/register` — create an account (role defaults to `viewer`)
 2. `POST /auth/login` — receive a signed JWT (valid 24 hours)
@@ -144,7 +147,7 @@ Three roles with clearly enforced permission boundaries:
 | `analyst` | ✅ | ✅ | ❌ | ❌ |
 | `admin` | ✅ | ✅ | ✅ | ✅ |
 
-**How it's enforced:** Role guards (`require_admin`, `require_analyst_or_admin`) are FastAPI dependency functions injected directly into route signatures — no middleware magic, clearly visible at every route definition.
+**How it's enforced:** Role guards (`require_admin`, `require_analyst_or_admin`) are FastAPI dependency functions injected directly into route signatures — no middleware, clearly visible at every route definition.
 
 **Self-registration is always `viewer`** — the role field in the request body is ignored to prevent privilege escalation. Admins promote roles via `PATCH /users/{user_id}`.
 
@@ -201,6 +204,10 @@ Three roles with clearly enforced permission boundaries:
 ## 🗑️ Soft Delete
 
 Records are **never physically removed**. A `DELETE` request sets `is_deleted = true` — the row is preserved in the database for audit history but excluded from all read and write queries. This is enforced through a shared `_active_records()` base query used by every records route.
+You can always see the data which has been deleted in the database with `is_deleted` attribute as **True** using the given below query:
+```
+SELECT * FROM records WHERE is_deleted = TRUE;
+```
 
 ---
 
@@ -209,7 +216,6 @@ Records are **never physically removed**. A `DELETE` request sets `is_deleted = 
 - Passwords hashed with **bcrypt** (constant-time comparison prevents timing attacks)
 - Failed login returns the same error whether the email doesn't exist or the password is wrong — avoids leaking account existence
 - `SECRET_KEY` is validated at startup — the server won't start without it (no insecure fallback)
-- TiDB connections use SSL and connection pooling with `pool_pre_ping` to handle idle connection drops gracefully
 
 ---
 
@@ -217,6 +223,6 @@ Records are **never physically removed**. A `DELETE` request sets `is_deleted = 
 
 - **Records are global, not per-user.** All analysts/admins see all records. The `user_id` field tracks who created the record but does not scope visibility. This matches a shared finance dashboard where data is organizational, not personal.
 - **Viewers see dashboard summaries but not raw records.** This supports an executive/read-only use case — high-level numbers without access to individual transactions.
-- **Soft delete is intentional.** Financial records should not be permanently erased unilaterally. The `is_deleted` flag preserves audit history while keeping the API surface clean. A restore endpoint would be trivial to add.
+- **Soft delete is intentional.** Financial records should not be permanently erased unilaterally. The `is_deleted` flag preserves audit history while keeping the API surface clean. You can always see which records were deleted from the database having the `is_deleted` attribute as **True**.
 - **No migrations tool used.** `create_all()` handles schema creation on startup. For a production system, Alembic would be the right choice.
 - **Email is the unique login identifier.**
