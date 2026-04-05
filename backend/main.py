@@ -6,8 +6,8 @@ from fastapi.responses import JSONResponse
 from db import engine, Base
 
 # Import all models so SQLAlchemy registers them before create_all
-import models.user   # noqa: F401
-import models.record  # noqa: F401
+import models.user   
+import models.record  
 
 from routes import auth, users, records, dashboard
 
@@ -28,7 +28,7 @@ built with FastAPI, SQLAlchemy, and TiDB Cloud (MySQL-compatible).
 
 1. Call **POST /auth/login** with your email and password
 2. Copy the `access_token` from the response
-3. Click the **Authorize ** button at the top
+3. Click the **Authorize** button at the top
 4. Paste your token in the value field
 5. Click **Authorize** — all protected routes are now unlocked
 
