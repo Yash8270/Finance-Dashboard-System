@@ -77,7 +77,6 @@ def health_check():
 
 
 # --- Global exception handler ---
-# Catches any unhandled server-side error and returns a consistent JSON envelope
 # instead of a raw 500 traceback or an empty response.
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
